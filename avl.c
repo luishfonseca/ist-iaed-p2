@@ -169,6 +169,14 @@ void avl_traverse(struct AVL* n, void (*visit)(void*)) {
 	}
 }
 
+void avl_traverse_post(struct AVL* n, void (*visit)(void*)) {
+	if (n != NULL) {
+		avl_traverse_post(n->l, visit);
+		avl_traverse_post(n->r, visit);
+		visit(n->el);
+	}
+}
+
 void avl_delete(struct AVL* n) {
 	if (n != NULL) {
 		avl_delete(n->l);
