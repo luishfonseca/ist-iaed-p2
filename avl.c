@@ -81,7 +81,6 @@ int balance_factor(struct AVL* n) {
 struct AVL* max(struct AVL* n) {
 	while(n != NULL && n->r != NULL)
 		n = max(n->r);
-
 	return n;
 }
 

@@ -100,7 +100,7 @@ void print_dir_relative_path(void* d) {
 	printf("%s\n", dir->rel_path);
 }
 
-struct Directory* aux_create_directory(struct Directory* dir, char* path) {
+struct Directory* create_directory(struct Directory* dir, char* path) {
 	struct Directory* sub;
 	char* rel_path = strtok(path, "/");
 
@@ -110,21 +110,15 @@ struct Directory* aux_create_directory(struct Directory* dir, char* path) {
 	sub = avl_find(dir->subdirs_by_path, rel_path, search_path);
 	if (sub == NULL) {
 		sub = new_directory(rel_path);
+		sub->p = dir;
 		dir->subdirs_by_id = avl_insert(dir->subdirs_by_id, sub, cmp_ids);
 		dir->subdirs_by_path = avl_insert(dir->subdirs_by_path, sub, cmp_paths);
 	}
 
-	return aux_create_directory(sub, NULL);
+	return create_directory(sub, NULL);
 }
 
-struct Directory* create_directory(struct Directory* root, char* path) {
-	char* p = strdup(path);
-	struct Directory* dir = aux_create_directory(root, p);
-	free(p);
-	return dir;
-}
-
-struct Directory* aux_find_directory(struct Directory* dir, char* path) {
+struct Directory* find_directory(struct Directory* dir, char* path) {
 	struct Directory* sub;
 	char* rel_path = strtok(path, "/");
 
@@ -135,7 +129,7 @@ struct Directory* aux_find_directory(struct Directory* dir, char* path) {
 	if (sub == NULL)
 		return NULL;
 	else
-		return aux_find_directory(sub, NULL);
+		return find_directory(sub, NULL);
 }
 
 void remove_directory(void* d) {
