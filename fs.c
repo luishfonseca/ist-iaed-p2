@@ -24,10 +24,24 @@ char* strdup(char* str) {
 	return strcpy(malloc(strlen(str)+1),str);
 }
 
+char* clean_path(char* path) {
+	char* p = strdup(path);
+	char buffer[65536] = "";
+	char* token = strtok(p, "/");
+
+	while (token != NULL) {
+		strncat(buffer, "/", 2);
+		strncat(buffer, token, strlen(token));
+        token = strtok(NULL, "/");
+	}
+
+	free(p);
+	return strdup(buffer);
+}
+
 struct File* new_file(char* path, char* value) {
 	struct File* f = malloc(sizeof(struct Directory));
-	/* Clean up path before setting it */
-	f->path = strdup(path);
+	f->path = clean_path(path);
 	f->value = strdup(value);
 	return f;
 }
