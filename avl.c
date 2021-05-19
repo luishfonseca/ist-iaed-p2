@@ -161,19 +161,21 @@ struct AVL* avl_remove(struct AVL* n, void* el, int (*cmp_els)(void*, void*)) {
 	return balance(n);
 }
 
+void avl_destroy(struct AVL* n, void (*free_el)(void*)) {
+	if (n != NULL) {
+		avl_destroy(n->l, free_el);
+		avl_destroy(n->r, free_el);
+		if (free_el != NULL)
+			free_el(n->el);
+		free(n);
+	}
+}
+
 void avl_traverse(struct AVL* n, void (*visit)(void*)) {
 	if (n != NULL) {
 		avl_traverse(n->l, visit);
 		visit(n->el);
 		avl_traverse(n->r, visit);
-	}
-}
-
-void avl_traverse_post(struct AVL* n, void (*visit)(void*)) {
-	if (n != NULL) {
-		avl_traverse_post(n->l, visit);
-		avl_traverse_post(n->r, visit);
-		visit(n->el);
 	}
 }
 

@@ -12,6 +12,7 @@ struct Directory {
 	int id;
 	char* rel_path;
 	struct File* f;
+	struct Directory* p;
 	struct AVL* subdirs_by_id;
 	struct AVL* subdirs_by_path;
 };
@@ -32,7 +33,7 @@ char* clean_path(char* path) {
 	while (token != NULL) {
 		strncat(buffer, "/", 2);
 		strncat(buffer, token, strlen(token));
-        token = strtok(NULL, "/");
+		token = strtok(NULL, "/");
 	}
 
 	free(p);
@@ -70,6 +71,7 @@ struct Directory* new_directory(char* rel_path) {
 	dir->id = id++;
 	dir->rel_path = strdup(rel_path);
 	dir->f = NULL;
+	dir->p = NULL;
 	dir->subdirs_by_id = NULL;
 	dir->subdirs_by_path = NULL;
 	return dir;
@@ -136,11 +138,36 @@ struct Directory* aux_find_directory(struct Directory* dir, char* path) {
 		return aux_find_directory(sub, NULL);
 }
 
-struct Directory* find_directory(struct Directory* root, char* path) {
-	char* p = strdup(path);
-	struct Directory* dir = aux_find_directory(root, p);
-	free(p);
-	return dir;
+void remove_directory(void* d) {
+	struct Directory* dir = d;
+
+	if (dir != NULL) {
+		if (dir->f != NULL)
+			remove_file(dir->f);
+
+		avl_destroy(dir->subdirs_by_path, remove_directory);
+		avl_destroy(dir->subdirs_by_id, NULL);
+
+		free(dir->rel_path);
+		free(dir);
+	}
+}
+
+void prune_branch(struct Directory* dir) {
+	struct Directory* aux;
+
+	while (dir->subdirs_by_path == NULL && dir->f == NULL) {
+		aux = dir->p;
+
+		aux->subdirs_by_path = avl_remove(aux->subdirs_by_path, dir, cmp_paths);
+		free(dir->subdirs_by_path);
+		aux->subdirs_by_id = avl_remove(aux->subdirs_by_id, dir, cmp_ids);
+		free(dir->subdirs_by_id);
+
+		free(dir->rel_path);
+		free(dir);
+		dir = aux;
+	}
 }
 
 void print_all(void* d) {
@@ -156,16 +183,18 @@ void print_all(void* d) {
 
 struct FS* fs_init() {
 	struct FS* fs = malloc(sizeof(struct FS));
-	fs->root = new_directory("/");
+	fs->root = NULL;
 	return fs;
 }
 
 int fs_set(struct FS* fs, char* path, char* value) {
 	struct File* f = new_file(path, value);
-	struct Directory* dir = find_directory(fs->root, path);
+	struct Directory* dir;
 
-	if (dir == NULL)
-		dir = create_directory(fs->root, path);
+	if (fs->root == NULL)
+		fs->root = new_directory("/");
+
+	dir = create_directory(fs->root, path);
 
 	if (dir->f != NULL)
 		remove_file(dir->f);
@@ -194,6 +223,22 @@ int fs_list(struct FS* fs, char* path) {
 		return 1; /* Not found */
 	else
 		avl_traverse(dir->subdirs_by_path, print_dir_relative_path);
+
+	return 0;
+}
+
+int fs_remove(struct FS* fs, char* path) {
+	struct Directory* dir = find_directory(fs->root, path);
+
+	if (dir == NULL)
+		return 1; /* Not found */
+	else {
+		struct Directory* aux = dir->p;
+		aux->subdirs_by_path = avl_remove(aux->subdirs_by_path, dir, cmp_ids);
+		aux->subdirs_by_id = avl_remove(aux->subdirs_by_id, dir, cmp_ids);
+		remove_directory(dir);
+		prune_branch(aux);
+	}
 
 	return 0;
 }
