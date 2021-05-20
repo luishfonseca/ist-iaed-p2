@@ -180,7 +180,6 @@ int fs_remove(struct FS* fs, char* path) {
 		aux->subdirs_by_path = avl_remove(aux->subdirs_by_path, dir, cmp_ids);
 		aux->subdirs_by_id = avl_remove(aux->subdirs_by_id, dir, cmp_ids);
 		remove_directory(dir);
-		prune_branch(aux);
 	}
 
 	return 0;
