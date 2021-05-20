@@ -1,5 +1,4 @@
-/* struct FS; */
-struct FS {struct Directory* root;};
+struct FS;
 
 struct FS* fs_init();
 int fs_set(struct FS* fs, char* path, char* value);

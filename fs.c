@@ -195,3 +195,9 @@ int fs_print(struct FS* fs) {
 	print_all(fs->root);
 	return 0;
 }
+
+int fs_destroy(struct FS* fs) {
+	remove_directory(fs->root);
+	free(fs);
+	return 0;
+}
