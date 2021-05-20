@@ -3,15 +3,10 @@
 #include <stdio.h>
 #include "avl.h"
 
-struct File {
-	char* path;
-	char* value;
-};
-
 struct Directory {
 	int id;
-	char* rel_path;
-	struct File* f;
+	char* path;
+	char* value;
 	struct Directory* p;
 	struct AVL* subdirs_by_id;
 	struct AVL* subdirs_by_path;
@@ -25,52 +20,12 @@ char* strdup(char* str) {
 	return strcpy(malloc(strlen(str)+1),str);
 }
 
-char* clean_path(char* path) {
-	char* p = strdup(path);
-	char buffer[65536] = "";
-	char* token = strtok(p, "/");
-
-	while (token != NULL) {
-		strncat(buffer, "/", 2);
-		strncat(buffer, token, strlen(token));
-		token = strtok(NULL, "/");
-	}
-
-	free(p);
-	return strdup(buffer);
-}
-
-struct File* new_file(char* path, char* value) {
-	struct File* f = malloc(sizeof(struct Directory));
-	f->path = clean_path(path);
-	f->value = strdup(value);
-	return f;
-}
-
-void remove_file(struct File* f) {
-	free(f->path);
-	free(f->value);
-	free(f);
-}
-
-void print_file(struct File* f) {
-	printf("%s %s\n", f->path, f->value);
-}
-
-void print_file_value(struct File* f) {
-	printf("%s\n", f->value);
-}
-
-void print_file_path(struct File* f) {
-	printf("%s\n", f->path);
-}
-
 struct Directory* new_directory(char* rel_path) {
 	static int id = 0;
 	struct Directory* dir = malloc(sizeof(struct Directory));
 	dir->id = id++;
-	dir->rel_path = strdup(rel_path);
-	dir->f = NULL;
+	dir->path = strdup(rel_path);
+	dir->value = NULL;
 	dir->p = NULL;
 	dir->subdirs_by_id = NULL;
 	dir->subdirs_by_path = NULL;
@@ -79,13 +34,13 @@ struct Directory* new_directory(char* rel_path) {
 
 int search_path(void* path, void* dir) {
 	char* path1 = (char*)path;
-	char* path2 = ((struct Directory*)dir)->rel_path;
+	char* path2 = ((struct Directory*)dir)->path;
 	return strcmp(path1, path2);
 }
 
 int cmp_paths(void* dir1, void* dir2) {
-	char* path1 = ((struct Directory*)dir1)->rel_path;
-	char* path2 = ((struct Directory*)dir2)->rel_path;
+	char* path1 = ((struct Directory*)dir1)->path;
+	char* path2 = ((struct Directory*)dir2)->path;
 	return strcmp(path1, path2);
 }
 
@@ -97,7 +52,14 @@ int cmp_ids(void* dir1, void* dir2) {
 
 void print_dir_relative_path(void* d) {
 	struct Directory* dir = d;
-	printf("%s\n", dir->rel_path);
+	printf("%s\n", dir->path);
+}
+
+void print_dir_full_path(void* d) {
+	struct Directory* dir = d;
+	if (dir->p != NULL && strcmp(dir->p->path, "/") != 0)
+		print_dir_full_path(dir->p);
+	printf("/%s", dir->path);
 }
 
 struct Directory* create_directory(struct Directory* dir, char* path) {
@@ -120,9 +82,12 @@ struct Directory* create_directory(struct Directory* dir, char* path) {
 
 struct Directory* find_directory(struct Directory* dir, char* path) {
 	struct Directory* sub;
-	char* rel_path = strtok(path, "/");
+	char* rel_path;
 
-	if (rel_path == NULL)
+	if (dir == NULL)
+		return NULL;
+
+	if ((rel_path = strtok(path, "/")) == NULL)
 		return dir;
 
 	sub = avl_find(dir->subdirs_by_path, rel_path, search_path);
@@ -136,31 +101,14 @@ void remove_directory(void* d) {
 	struct Directory* dir = d;
 
 	if (dir != NULL) {
-		if (dir->f != NULL)
-			remove_file(dir->f);
+		if (dir->value != NULL)
+			free(dir->value);
 
 		avl_destroy(dir->subdirs_by_path, remove_directory);
 		avl_destroy(dir->subdirs_by_id, NULL);
 
-		free(dir->rel_path);
+		free(dir->path);
 		free(dir);
-	}
-}
-
-void prune_branch(struct Directory* dir) {
-	struct Directory* aux;
-
-	while (dir->subdirs_by_path == NULL && dir->f == NULL) {
-		aux = dir->p;
-
-		aux->subdirs_by_path = avl_remove(aux->subdirs_by_path, dir, cmp_paths);
-		free(dir->subdirs_by_path);
-		aux->subdirs_by_id = avl_remove(aux->subdirs_by_id, dir, cmp_ids);
-		free(dir->subdirs_by_id);
-
-		free(dir->rel_path);
-		free(dir);
-		dir = aux;
 	}
 }
 
@@ -168,8 +116,10 @@ void print_all(void* d) {
 	struct Directory* dir = d;
 
 	if (dir != NULL) {
-		if (dir->f != NULL)
-			print_file(dir->f);
+		if (dir->value != NULL) {
+			print_dir_full_path(dir);
+			printf(" %s\n", dir->value);
+		}
 
 		avl_traverse(dir->subdirs_by_id, print_all);
 	}
@@ -182,7 +132,6 @@ struct FS* fs_init() {
 }
 
 int fs_set(struct FS* fs, char* path, char* value) {
-	struct File* f = new_file(path, value);
 	struct Directory* dir;
 
 	if (fs->root == NULL)
@@ -190,9 +139,9 @@ int fs_set(struct FS* fs, char* path, char* value) {
 
 	dir = create_directory(fs->root, path);
 
-	if (dir->f != NULL)
-		remove_file(dir->f);
-	dir->f = f;
+	if (dir->value != NULL)
+		free(dir->value);
+	dir->value = strdup(value);
 
 	return 0;
 }
@@ -202,10 +151,10 @@ int fs_find(struct FS* fs, char* path) {
 
 	if (dir == NULL)
 		return 1; /* Not found */
-	else if (dir->f == NULL)
+	else if (dir->value == NULL)
 		return 2; /* No data */
 	else
-		print_file_value(dir->f);
+		printf("%s\n", dir->value);
 
 	return 0;
 }

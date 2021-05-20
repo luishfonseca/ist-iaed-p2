@@ -8,6 +8,3 @@ int fs_find(struct FS* fs, char* path);
 int fs_list(struct FS* fs, char* path);
 int fs_print(struct FS* fs);
 int fs_destroy(struct FS* fs);
-
-
-char* strdup(char* str);
