@@ -176,11 +176,17 @@ int fs_remove(struct FS* fs, char* path) {
 	if (dir == NULL)
 		return 1; /* Not found */
 	else {
-		struct Directory* aux = dir->p;
-		aux->subdirs_by_path = avl_remove(aux->subdirs_by_path, dir, cmp_ids);
-		aux->subdirs_by_id = avl_remove(aux->subdirs_by_id, dir, cmp_ids);
+		if (dir->p != NULL) {
+			dir->p->subdirs_by_path =
+				avl_remove(dir->p->subdirs_by_path, dir, cmp_paths);
+			dir->p->subdirs_by_id =
+				avl_remove(dir->p->subdirs_by_id, dir, cmp_ids);
+		}
 		remove_directory(dir);
 	}
+
+	if (dir == fs->root)
+		fs->root = NULL;
 
 	return 0;
 }
