@@ -11,6 +11,8 @@ struct AVL {
 
 struct AVL* new(void* el, struct AVL* l, struct AVL* r) {
 	struct AVL* n = malloc(sizeof(struct AVL));
+	if (n == NULL)
+		return NULL;
 	n->el = el;
 	n->l = l;
 	n->r = r;
@@ -125,12 +127,15 @@ struct AVL* avl_insert(struct AVL* n, void* el, int (*cmp_els)(void*, void*)) {
 	if (n == NULL)
 		return new(el, NULL, NULL);
 
-	if (cmp_els(el, n->el) < 0)
+	if (cmp_els(el, n->el) < 0) {
 		n->l = avl_insert(n->l, el, cmp_els);
-	else if (cmp_els(el, n->el) > 0)
+		if (n->l == NULL)
+			return NULL;
+	} else {
 		n->r = avl_insert(n->r, el, cmp_els);
-	else
-		printf("Attempted to insert duplicate!");
+		if (n->r == NULL)
+			return NULL;
+	}
 
 	return balance(n);
 }
@@ -160,28 +165,18 @@ struct AVL* avl_remove(struct AVL* n, void* el, int (*cmp_els)(void*, void*)) {
 	return balance(n);
 }
 
-void avl_destroy(struct AVL* n, void (*free_el)(void*)) {
+void avl_traverse(struct AVL* n, void (*visit)(void*, void*), void* extra) {
 	if (n != NULL) {
-		avl_destroy(n->l, free_el);
-		avl_destroy(n->r, free_el);
-		if (free_el != NULL)
-			free_el(n->el);
-		free(n);
+		avl_traverse(n->l, visit, extra);
+		visit(n->el, extra);
+		avl_traverse(n->r, visit, extra);
 	}
 }
 
-void avl_traverse(struct AVL* n, void (*visit)(void*)) {
+void avl_destroy(struct AVL* n) {
 	if (n != NULL) {
-		avl_traverse(n->l, visit);
-		visit(n->el);
-		avl_traverse(n->r, visit);
-	}
-}
-
-void avl_delete(struct AVL* n) {
-	if (n != NULL) {
-		avl_delete(n->l);
-		avl_delete(n->r);
+		avl_destroy(n->l);
+		avl_destroy(n->r);
 		free(n);
 	}
 }
