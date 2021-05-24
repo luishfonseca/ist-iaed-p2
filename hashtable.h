@@ -1,4 +1,8 @@
-#define INITIAL_SZ 13
+/*
+ * File:	hashtable.h
+ * Author:	Luís Fonseca, 99266
+ * Desc:	This header exposes the hashtable interface.
+ */
 
 struct HashTable;
 

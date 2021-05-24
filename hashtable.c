@@ -1,14 +1,32 @@
+/*
+ * File:	hashtable.c
+ * Author:	Luís Fonseca, 99266
+ * Desc:	HashTable implementation.
+ */
+
 #include <stdlib.h>
 #include <string.h>
-
 #include "hashtable.h"
 
+#define INITIAL_SZ 13
+
+/************************************************
+ * HASHTABLE:
+ * - table_sz: Current size of the table.
+ *
+ * - amt: Amount of elements in the table.
+ *
+ * - ht: Table of elements.
+ *************************************************/
 struct HashTable {
 	int table_sz;
 	int amt;
 	void** ht;
 };
 
+/*
+ * NEW TABLE: Creates a new hashtable.
+ */
 struct HashTable* new_table(int max) {
 	int i;
 	struct HashTable* ht = malloc(sizeof(struct HashTable));
@@ -30,14 +48,21 @@ struct HashTable* new_table(int max) {
 	return ht;
 }
 
+/*
+ * HASH: Returns the sting's hash.
+ */
 int hash(char* v, int M) {
-	long int h, a = 31415, b = 27183;
+	unsigned int h, a = 31415, b = 27183;
 
 	for (h = 0; *v != '\0'; v++, a = a*b % (M-1))
 		h = (a*h + *v) % M;
 	return h;
 }
 
+/*
+ * EXPAND: Doubles the size of the table and
+ *    reashes the elements.
+ */
 struct HashTable* expand(struct HashTable* ht, char* (*k)(void*)) {
 	int i;
 	struct HashTable* new_ht = new_table(ht->table_sz * 2);
@@ -56,6 +81,11 @@ struct HashTable* expand(struct HashTable* ht, char* (*k)(void*)) {
 	return new_ht;
 }
 
+/*
+ * HASHTABLE INSERT: Insert an element into the
+ *    table by hashing the key gotten with the
+ *    given key function.
+ */
 struct HashTable* ht_insert(struct HashTable* ht, void* el, char* (*k)(void*)) {
 	int i;
 
@@ -80,6 +110,12 @@ struct HashTable* ht_insert(struct HashTable* ht, void* el, char* (*k)(void*)) {
 	return ht;
 }
 
+/*
+ * HASHTABLE SEARCH: Returns the element with the
+ *    given key, when there are multiple
+ *    candidates uses the given "better" function
+ *    to pick the best one.
+ */
 void* ht_search(struct HashTable* ht, char* v, char* (*k)(void*),
                                      int (*better)(void*, void*)) {
 	int i = hash(v, ht->table_sz);
@@ -94,11 +130,17 @@ void* ht_search(struct HashTable* ht, char* v, char* (*k)(void*),
 	return el;
 }
 
+/*
+ * HASHTABLE REMOVE: Removes a given element from
+ *    the table.
+ */
 struct HashTable* ht_remove(struct HashTable* ht, void* el, char* (*k)(void*),
                                                      int (*cmp)(void*, void*)) {
 	int i = hash(k(el), ht->table_sz);
 
 	while (ht->ht[i] != NULL) {
+		/* Two elements with the same key might not be
+		 * the same so the given cmp function is used */
 		if (cmp(el, ht->ht[i]) == 0) {
 			ht->ht[i] = NULL;
 			--ht->amt;
@@ -114,11 +156,16 @@ struct HashTable* ht_remove(struct HashTable* ht, void* el, char* (*k)(void*),
 		ht->ht[i] = NULL;
 		--ht->amt;
 		ht = ht_insert(ht, aux, k);
+		/* No need the verify if the allocation was sucessful
+		 * since space in the table has just been freed. */
 		i = (i + 1) % ht->table_sz;
 	}
 	return ht;
 }
 
+/*
+ * HASHTABLE DESTROY: Free the hashtable.
+ */
 void ht_destroy(struct HashTable* ht) {
 	free(ht->ht);
 	free(ht);

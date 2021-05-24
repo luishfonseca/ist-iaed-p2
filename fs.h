@@ -1,3 +1,9 @@
+/*
+ * File:	fs.h
+ * Author:	Luís Fonseca, 99266
+ * Desc:	This header exposes the filesystem interface.
+ */
+
 #define FS_ROOT "/"
 #define PATH_DELIMITER "/"
 

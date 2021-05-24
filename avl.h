@@ -1,3 +1,9 @@
+/*
+ * File:	avl.h
+ * Author:	Luís Fonseca, 99266
+ * Desc:	This header exposes the AVL interface.
+ */
+
 struct AVL;
 
 struct AVL* avl_insert(struct AVL* n, void* el, int (*cmp_els)(void*, void*));

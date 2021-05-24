@@ -1,15 +1,34 @@
+/*
+ * File:	avl.c
+ * Author:	Luís Fonseca, 99266
+ * Desc:	AVL implementation.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include "avl.h"
 
+/************************************************
+ * AVL NODE:
+ * - l: left child.
+ *
+ * - r: right child.
+ *
+ * - h: height of node.
+ *
+ * - el: element associated to node.
+ *************************************************/
 struct AVL {
 	struct AVL *l, *r;
 	int h;
 	void* el;
 };
 
-struct AVL* new(void* el, struct AVL* l, struct AVL* r) {
+/*
+ * NEW NODE: Creates a new AVL tree node.
+ */
+struct AVL* new_node(void* el, struct AVL* l, struct AVL* r) {
 	struct AVL* n = malloc(sizeof(struct AVL));
 	if (n == NULL)
 		return NULL;
@@ -20,12 +39,19 @@ struct AVL* new(void* el, struct AVL* l, struct AVL* r) {
 	return n;
 }
 
+/*
+ * HEIGHT: Returns the height of a given node.
+ */
 int height(struct AVL* n) {
 	if (n == NULL)
 		return 0;
 	return n->h;
 }
 
+/*
+ * COMPUTE HEIGHT: Calculates the height by
+ *    looking at the node's children.
+ */
 void compute_height(struct AVL* n) {
 	int hl, hr;
 
@@ -34,7 +60,9 @@ void compute_height(struct AVL* n) {
 	n->h = hl > hr ? hl + 1 : hr + 1;
 }
 
-
+/*
+ * ROTATION LEFT
+ */
 struct AVL* rot_l(struct AVL* n) {
 	struct AVL* x = n->r;
 	n->r = x->l;
@@ -46,6 +74,9 @@ struct AVL* rot_l(struct AVL* n) {
 	return x;
 }
 
+/*
+ * ROTATION RIGHT
+ */
 struct AVL* rot_r(struct AVL* n) {
 	struct AVL* x = n->l;
 	n->l = x->r;
@@ -57,6 +88,9 @@ struct AVL* rot_r(struct AVL* n) {
 	return x;
 }
 
+/*
+ * ROTATION LEFT-RIGHT
+ */
 struct AVL* rot_lr(struct AVL* n) {
 	if (n == NULL)
 		return NULL;
@@ -65,6 +99,9 @@ struct AVL* rot_lr(struct AVL* n) {
 	return rot_r(n);
 }
 
+/*
+ * ROTATION RIGHT-LEFT
+ */
 struct AVL* rot_rl(struct AVL* n) {
 	if (n == NULL)
 		return NULL;
@@ -73,6 +110,10 @@ struct AVL* rot_rl(struct AVL* n) {
 	return rot_l(n);
 }
 
+/*
+ * BALANCE FACTOR: Calculates the balance factor
+ *    of a node.
+ */
 int balance_factor(struct AVL* n) {
 	if (n == NULL)
 		return 0;
@@ -80,12 +121,18 @@ int balance_factor(struct AVL* n) {
 	return height(n->l) - height(n->r);
 }
 
+/*
+ * MAX: Returns the max value in the AVL.
+ */
 struct AVL* max(struct AVL* n) {
 	while(n != NULL && n->r != NULL)
 		n = max(n->r);
 	return n;
 }
 
+/*
+ * BALANCE: Balances node.
+ */
 struct AVL* balance(struct AVL* n) {
 	int bf;
 
@@ -111,6 +158,11 @@ struct AVL* balance(struct AVL* n) {
 	return n;
 }
 
+/*
+ * AVL FIND: Returns the element associated to the
+ *    node found using a given both the key and a
+ *    comparison function.
+ */
 void* avl_find(struct AVL* n, void* k, int (*cmp_key_el)(void*, void*)) {
 	if (n == NULL)
 		return NULL;
@@ -123,9 +175,13 @@ void* avl_find(struct AVL* n, void* k, int (*cmp_key_el)(void*, void*)) {
 		return avl_find(n->r, k, cmp_key_el);
 }
 
+/*
+ * AVL INSERT: Insert a given element into the AVL
+ *    using a given comparison function.
+ */
 struct AVL* avl_insert(struct AVL* n, void* el, int (*cmp_els)(void*, void*)) {
 	if (n == NULL)
-		return new(el, NULL, NULL);
+		return new_node(el, NULL, NULL);
 
 	if (cmp_els(el, n->el) < 0) {
 		n->l = avl_insert(n->l, el, cmp_els);
@@ -140,6 +196,10 @@ struct AVL* avl_insert(struct AVL* n, void* el, int (*cmp_els)(void*, void*)) {
 	return balance(n);
 }
 
+/*
+ * AVL REMOVE: Remve a given element from the AVL
+ *    using a given comparison function.
+ */
 struct AVL* avl_remove(struct AVL* n, void* el, int (*cmp_els)(void*, void*)) {
 	if (n == NULL)
 		return NULL;
@@ -165,6 +225,10 @@ struct AVL* avl_remove(struct AVL* n, void* el, int (*cmp_els)(void*, void*)) {
 	return balance(n);
 }
 
+/*
+ * AVL TRAVERSE: Traverse the AVL in order and run
+ *    the given function on every element.
+ */
 void avl_traverse(struct AVL* n, void (*visit)(void*, void*), void* extra) {
 	if (n != NULL) {
 		avl_traverse(n->l, visit, extra);
@@ -173,6 +237,9 @@ void avl_traverse(struct AVL* n, void (*visit)(void*, void*), void* extra) {
 	}
 }
 
+/*
+ * AVL DESTROY: Free the AVL
+ */
 void avl_destroy(struct AVL* n) {
 	if (n != NULL) {
 		avl_destroy(n->l);

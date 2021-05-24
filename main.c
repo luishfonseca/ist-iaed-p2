@@ -1,3 +1,9 @@
+/*
+ * File:	main.c
+ * Author:	Luís Fonseca, 99266
+ * Desc:	Entry point of the program, handles input.
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -19,21 +25,14 @@
 
 #define ERR_MSG_NOT_FOUND "not found"
 #define ERR_MSG_NO_DATA "no data"
+#define ERR_MSG_NO_MEMORY "no memory"
 
-int help() {
-	puts(
-		HELP_HELP
-		HELP_QUIT
-		HELP_SET
-		HELP_PRINT
-		HELP_FIND
-		HELP_LIST
-		HELP_SEARCH
-		HELP_DELETE
-	);
-	return 0;
-}
-
+/*
+ * COMMAND HANDLING FUNCTIONS: The following
+ *    functions read the arguments from stdin and
+ *    call the relevant function of the filesystem
+ *    interface.
+ */
 int set(struct FS* fs_store) {
 	char path[BUFF_SZ], data[BUFF_SZ];
 	scanf("%s%*[ ]%[^\n]", path, data);
@@ -74,6 +73,26 @@ int quit(struct FS* fs_store) {
 	return STOP;
 }
 
+int help() {
+	puts(
+		HELP_HELP
+		HELP_QUIT
+		HELP_SET
+		HELP_PRINT
+		HELP_FIND
+		HELP_LIST
+		HELP_SEARCH
+		HELP_DELETE
+	);
+	return 0;
+}
+
+
+/*
+ * SELECTION FUNCTION: Reads the command from
+ *    stdin and picks the relevant command
+ *    handling funcion.
+ */
 int select(struct FS* fs_store) {
 	char cmd[BUFF_SZ];
 	scanf("%s", cmd);
@@ -98,6 +117,12 @@ int select(struct FS* fs_store) {
 		return OK;
 }
 
+
+/*
+ * MAIN FUNCTION: Setups the filesystem and runs
+ *    the loop handling any error or request by
+ *    the user to stop.
+ */
 int main() {
 	int status = KEEP_GOING;
 	struct FS* fs_store = fs_init();
@@ -113,6 +138,7 @@ int main() {
 					puts(ERR_MSG_NO_DATA);
 					break;
 				case ERR_NO_MEMORY:
+					puts(ERR_MSG_NO_MEMORY);
 					quit(fs_store);
 					status = STOP;
 					break;
