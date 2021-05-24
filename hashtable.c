@@ -49,7 +49,7 @@ struct HashTable* new_table(int max) {
 }
 
 /*
- * HASH: Returns the sting's hash.
+ * HASH: Returns the string's hash.
  */
 int hash(char* v, int M) {
 	unsigned int h, a = 31415, b = 27183;
